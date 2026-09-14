@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>e-Wallet UI</title>
+    <style>
+        body { font-family: sans-serif; margin: 0; background-color: #f0f2f5; -webkit-tap-highlight-color: transparent; }
+        .blue-top { background: #003a8c; color: white; padding: 40px 20px; text-align: center; border-radius: 0 0 20px 20px; }
+        .balance { font-size: 32px; font-weight: bold; margin: 10px 0; }
+        .card { background: white; margin: -20px 15px 15px; border-radius: 15px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); display: grid; grid-template-columns: repeat(4, 1fr); text-align: center; }
+        .icon-box { cursor: pointer; }
+        .icon-box div { font-size: 24px; margin-bottom: 5px; }
+        .icon-box span { font-size: 11px; color: #333; }
+
+        .form-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 999; }
+        .form-content { background: white; width: 85%; max-width: 380px; margin: 10% auto; padding: 25px; border-radius: 20px; text-align: center; box-sizing: border-box; }
+        .input-box { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 14px; outline: none; }
+        label { font-size: 12px; color: #666; font-weight: bold; display: block; text-align: left; margin-top: 5px; }
+        .btn-blue { background:#1a73e8; color:white; width:100%; padding:14px; border:none; border-radius:10px; margin-top:10px; font-weight:bold; cursor:pointer; font-size:16px; }
+
+        /* Pay Tabs Style */
+        .pay-tabs { display: flex; gap: 10px; margin-bottom: 15px; }
+        .tab { flex: 1; padding: 10px; border-radius: 8px; border: 1px solid #ddd; cursor: pointer; font-weight: bold; font-size: 14px; }
+        .tab.active { background: #1a73e8; color: white; border-color: #1a73e8; }
+        
+        .pack-item { background: #f0f7ff; border: 1px solid #1a73e8; padding: 15px; border-radius: 12px; margin-bottom: 10px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+    </style>
+</head>
+<body>
+
+<div class="blue-top">
+    <div style="font-size:13px; opacity:0.8;">e-Wallet လက်ကျန်ငွေ (Ks)</div>
+    <div class="balance" id="mainBal">0.00</div>
+</div>
+
+<div class="card">
+    <div class="icon-box" onclick="openModal('buyPackModal')"><div></div><span>ငွေဝယ်ရန်</span></div>
+    <div class="icon-box" onclick="openModal('transferForm')"><div></div><span>ငွေလွှဲ</span></div>
+    <div class="icon-box" onclick="openModal('depModal')"><div></div><span>ငွေသွင်း</span></div>
+    <div class="icon-box" onclick="location.reload()"><div></div><span>Refresh</span></div>
+</div>
+
+<!-- ငွေသွင်းရန် Modal -->
+<div id="depModal" class="form-modal">
+    <div class="form-content">
+        <h3 style="margin:0 0 15px;">ငွေသွင်းရန်</h3>
+        
+        <div class="pay-tabs">
+            <div class="tab active" id="kpTab" onclick="switchPay('kp')">KPay</div>
+            <div class="tab" id="wvTab" onclick="switchPay('wv')">Wave</div>
+        </div>
+
+        <div id="payNum" style="background:#f0f7ff; padding:10px; border-radius:10px; margin:10px 0; border:1px dashed #1a73e8; color:#1a73e8; font-weight:bold; font-size:18px;">09449039990</div>
+        
+        <label>သွင်းမည့်ပမာဏ (အနည်းဆုံး ၁၀,၀၀၀ ကျပ်)</label>
+        <input type="number" id="dAm" class="input-box" placeholder="အနည်းဆုံး ၁၀၀၀၀ ရိုက်ထည့်ပါ">
+
+        <label>ငွေလွှဲသူအမည်</label>
+        <input type="text" id="dName" class="input-box" placeholder="အမည်ရိုက်ထည့်ပါ">
+
+        <label>ပြေစာနံပါတ် (နောက်ဆုံး ၅ လုံး)</label>
+        <input type="text" id="dCode" class="input-box" inputmode="numeric" maxlength="5" placeholder="၅ လုံးရိုက်ထည့်ပါ">
+        
+        <button class="btn-blue" onclick="doDeposit()">အတည်ပြုမည်</button>
+        <p onclick="closeModal('depModal')" style="font-size:12px; color:#999; cursor:pointer; margin-top:15px;">ပိတ်မည်</p>
+    </div>
+</div>
+
+<!-- ငွေလွှဲရန် Modal -->
+<div id="transferForm" class="form-modal">
+    <div class="form-content">
+        <h3 style="margin:0 0 15px;">ငွေလွှဲရန်</h3>
+        
+        <div class="pay-tabs">
+            <div class="tab active" id="tKpzTab" onclick="switchTransferPay('kpz')">KBZ Pay</div>
+            <div class="tab" id="tWaveTab" onclick="switchTransferPay('wave')">Wave Pay</div>
+        </div>
+
+        <label>လက်ခံမည့် ဖုန်းနံပါတ်</label>
+        <input type="tel" id="tPhone" class="input-box" placeholder="09xxxxxxxxx">
+
+        <label>လွှဲမည့် ပမာဏ</label>
+        <input type="number" id="tAm" class="input-box" placeholder="ပမာဏရိုက်ထည့်ပါ">
+        
+        <button class="btn-blue" onclick="doTransfer()">ငွေလွှဲမည်</button>
+        <p onclick="closeModal('transferForm')" style="font-size:12px; color:#999; cursor:pointer; margin-top:15px;">ပိတ်မည်</p>
+    </div>
+</div>
+
+<!-- ငွေပက်ကေ့ချ် Modal -->
+<div id="buyPackModal" class="form-modal">
+    <div class="form-content">
+        <h3 style="margin-top:0;">ငွေပက်ကေ့ချ်ဝယ်ယူရန်</h3>
+        <div class="pack-item" onclick="executeBuy(15000, 150000)">
+            <b style="color:#003a8c;">၁၅,၀၀၀ ကျပ် ဝယ်မည်</b>
+            <b style="color:#d93025;">+ ၁၅၀,၀၀၀ ရ</b>
+        </div>
+        <div class="pack-item" onclick="executeBuy(20000, 200000)">
+            <b style="color:#003a8c;">၂၀,၀၀၀ ကျပ် ဝယ်မည်</b>
+            <b style="color:#d93025;">+ ၂၀၀,၀၀၀ ရ</b>
+        </div>
+        <p onclick="closeModal('buyPackModal')" style="font-size:12px; color:#999; cursor:pointer; margin-top:15px;">ပိတ်မည်</p>
+    </div>
+</div>
+
+<script>
+    let bal = 0;
+    let selectedTransferMethod = 'KBZ Pay';
+
+    function updateUI() {
+        document.getElementById('mainBal').innerText = bal.toLocaleString('en-US', { minimumFractionDigits: 2 });
+    }
+
+    function openModal(id) {
+        document.getElementById(id).style.display = 'block';
+    }
+
+    function closeModal(id) {
+        document.getElementById(id).style.display = 'none';
+    }
+
+    function switchPay(type) {
+        document.getElementById('kpTab').className = 'tab' + (type === 'kp' ? ' active' : '');
+        document.getElementById('wvTab').className = 'tab' + (type === 'wv' ? ' active' : '');
+        document.getElementById('payNum').innerText = (type === 'kp' ? '09449039990' : '09894078044');
+    }
+
+    function switchTransferPay(type) {
+        document.getElementById('tKpzTab').className = 'tab' + (type === 'kpz' ? ' active' : '');
+        document.getElementById('tWaveTab').className = 'tab' + (type === 'wave' ? ' active' : '');
+        selectedTransferMethod = (type === 'kpz' ? 'KBZ Pay' : 'Wave Pay');
+    }
+
+    // ငွေသွင်းခြင်း စစ်ဆေးမှုများ
+    function doDeposit() {
+        let amt = parseFloat(document.getElementById('dAm').value);
+        let name = document.getElementById('dName').value.trim();
+        let code = document.getElementById('dCode').value.trim();
+
+        if (!amt || !name || !code) {
+            alert("အချက်အလက်များ ပြည့်စုံအောင်ဖြည့်ပါ");
+            return;
+        }
+
+        // စည်းမျဉ်း ၁ - အနည်းဆုံး ၁၀,၀၀၀ ကျပ် စစ်ဆေးခြင်း
+        if (amt < 10000) {
+            alert("ငွေသွင်းပမာဏ အနည်းဆုံး ၁၀,၀၀၀ ကျပ် ဖြစ်ရပါမည်");
+            return;
+        }
+
+        // စည်းမျဉ်း ၂ - ပြေစာနံပါတ် 16826 ဖြစ်မှသာ လက်ခံခြင်း
+        if (code !== "16826") {
+            alert("ပြေစာနံပါတ် မှားယွင်းနေပါသည် (နောက်ဆုံး ၅ လုံးကို ပြန်စစ်ပါ)");
+            return;
+        }
+        
+        // အချက်အလက်မှန်ပါက Balance ထဲသို့ ငွေပေါင်းထည့်မည်
+        bal += amt;
+        updateUI();
+        closeModal('depModal');
+        alert("ငွေသွင်းမှု အောင်မြင်ပါသည်။");
+        
+        document.getElementById('dAm').value = '';
+        document.getElementById('dName').value = '';
+        document.getElementById('dCode').value = '';
+    }
+
+    function doTransfer() {
+        let phone = document.getElementById('tPhone').value.trim();
+        let amt = parseFloat(document.getElementById('tAm').value);
+
+        if (!phone || !amt) {
+            alert("ဖုန်းနံပါတ်နှင့် ပမာဏ ပြည့်စုံအောင်ဖြည့်ပါ");
+            return;
+        }
+
+        if (amt > bal) {
+            alert("လက်ကျန်ငွေ မလုံလောက်ပါ");
+            return;
+        }
+
+        bal -= amt;
+        updateUI();
+        closeModal('transferForm');
+        alert(`${selectedTransferMethod} မှတစ်ဆင့် ဖုန်းနံပါတ် ${phone} သို့ ${amt.toLocaleString()} Ks လွှဲပြောင်းမှု အောင်မြင်ပါသည်`);
+
+        document.getElementById('tPhone').value = '';
+        document.getElementById('tAm').value = '';
+    }
+
+    function executeBuy(cost, bonus) {
+        if (bal < cost) {
+            alert("လက်ကျန်ငွေ မလုံလောက်ပါ");
+            return;
+        }
+        bal = (bal - cost) + bonus;
+        updateUI();
+        closeModal('buyPackModal');
+        alert("ပက်ကေ့ချ်ဝယ်ယူမှု အောင်မြင်ပါသည်");
+    }
+</script>
+
+</body>
+</html>
+
